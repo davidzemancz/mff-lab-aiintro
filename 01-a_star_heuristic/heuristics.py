@@ -7,8 +7,7 @@
 import math
 
 def grid_2D_heuristic(current, destination):
-    math.abs((current[0]-destination[0]))+math.abs((current[1]-destination[1]))
-    return 0
+    return abs((current[0]-destination[0])) + abs((current[1]-destination[1]))
 
 def grid_diagonal_2D_heuristic(current, destination):
     return 0

@@ -20,14 +20,29 @@ def grid_all_diagonal_3D_heuristic(current, destination):
 
 def grid_face_diagonal_3D_heuristic(current, destination):
     val = 0
-    if current[0] != destination[0] and current[1] != destination[1] and current[2] != destination[2]:
-        val = max(
-            max(abs((current[0]-destination[0])), abs((current[1]-destination[1])))
-            ,max(abs((current[0]-destination[0])), abs((current[2]-destination[2])))
-            ,max(abs((current[1]-destination[1])), abs((current[2]-destination[2]))))
-    else: 
-        val = max(abs((current[0]-destination[0])), abs((current[1]-destination[1])), abs((current[2]-destination[2])))
+
+    d0 = abs((current[0]-destination[0]))
+    d1 = abs((current[1]-destination[1]))
+    d2 = abs((current[2]-destination[2]))
+    
+    if d0 <= d1 and d0 <= d2:
+        val = d0 + max(d1, d2)
+    elif  d1 <= d2:
+        val = d1 + max(d0, d2) 
+    else:
+        val = d2 + max(d1, d0)
+
+    print(current, destination, val)
+
     return val
 
 def grid_knight_2D_heuristic(current, destination):
-    return max(abs((current[0]-destination[0])) - abs((current[1]-destination[1])), abs((current[1]-destination[1])) - abs((current[0]-destination[0])))
+    val = 0
+    
+    d0 = abs((current[0]-destination[0]))
+    d1 = abs((current[1]-destination[1]))
+
+    val = min(d0,d1)
+    print(current, destination, val)
+
+    return val

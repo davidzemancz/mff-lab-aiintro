@@ -1,5 +1,6 @@
 # Install package python-constraint, not constraint !!!
 import constraint
+import networkx
 
 def total_coloring(graph):
     """
@@ -10,13 +11,26 @@ def total_coloring(graph):
 
         TODO: The implementation of this function finds some total coloring but the number of colors may not be minimal.
         Find the total chromatic index.
+
+        colors = 0
+        for u in graph.nodes():
+            graph.nodes[u]["color"] = colors
+            colors += 1
+        for u,v in graph.edges():
+            graph.edges[u,v]["color"] = colors
+            colors += 1
+        return colors
     """
+    problem = constraint.Problem()
+
     colors = 0
-    for u in graph.nodes():
-        graph.nodes[u]["color"] = colors
-        colors += 1
-    for u,v in graph.edges():
+    for u, v in graph.edges():
         graph.edges[u,v]["color"] = colors
-        colors += 1
+        problem.addConstraint(lambda u, v: u["color"] != v["color"] , ("a", "b"))
+
+    print(problem.getSolutions())
+    
     return colors
+
+   
 

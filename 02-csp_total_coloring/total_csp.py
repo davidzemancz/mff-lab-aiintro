@@ -43,6 +43,7 @@ def total_coloring(graph):
         first = True
         for v in graph.nodes():
             if first:
+                # Tohle by slo udelat pro vsechny vrcholy, ktere nemaji spolecnou hranu. (... coz bych udelal brute-force, protoze nechci hledat nejvetsi NzMnu)
                 problem.addVariable(get_vrtx_name(v), [0])
                 first = False
             else:
@@ -58,7 +59,6 @@ def total_coloring(graph):
             edge = edge + 1
 
         # Add constrains
-        
         for u,v in graph.edges():
             # Conected vertices
             problem.addConstraint(lambda c1, c2: c1 != c2, (get_vrtx_name(u), get_vrtx_name(v)))
@@ -78,6 +78,7 @@ def total_coloring(graph):
         
       
         #print(time(), "Colors:", colors, "Solving started")
+        #print("Constraints:", len(problem._constraints))
 
         solution = problem.getSolution()
         if solution is not None: break

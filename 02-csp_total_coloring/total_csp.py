@@ -1,6 +1,7 @@
 # Install package python-constraint, not constraint !!!
 import constraint
 import networkx
+from datetime import datetime
 
 def total_coloring(graph):
     """
@@ -22,17 +23,34 @@ def total_coloring(graph):
         return colors
     """
     # http://labix.org/doc/constraint/
-    solutution = None
-    for colors in range(1, 100):
+    
+    # Get maximum vertex degree
+    max_deg = 1
+    for v in graph.nodes():
+        deg = graph.degree(v)
+        if deg > max_deg:
+            max_deg = deg
+
+
+    solution = None
+    colors = max_deg + 1
+    while solution is None:
         problem = constraint.Problem()
 
+        #print(time(), "Colors:", colors, "Init started")
+
         # Add variables for vertices
+        i = 0
         for v in graph.nodes():
-            problem.addVariable(get_vrtx_name(v), range(0, colors))
+            if i == 0:
+                problem.addVariable(get_vrtx_name(v), [0])
+                i = 1
+            else:
+                problem.addVariable(get_vrtx_name(v), range(0, colors))
 
         # Add variables for edges
         edges = {}
-        edge = 1000
+        edge = len(graph.nodes()) + 1
         for u,v in graph.edges():
             problem.addVariable(edge, range(0, colors))
             edges[get_edge_name(u,v)] = edge
@@ -40,13 +58,16 @@ def total_coloring(graph):
             edge = edge + 1
 
         # Add constrains
+        
         for u,v in graph.edges():
             # Conected vertices
             problem.addConstraint(lambda c1, c2: c1 != c2, (get_vrtx_name(u), get_vrtx_name(v)))
 
             # Edge its and vertices
             problem.addConstraint(lambda c1, c2: c1 != c2, (get_vrtx_name(v), edges[get_edge_name(u,v)]))
+            problem.addConstraint(lambda c1, c2: c1 != c2, (get_vrtx_name(u), edges[get_edge_name(u,v)]))
 
+            # Edges sharing common vertex
             for n in graph.neighbors(u):
                 if n != v:
                     problem.addConstraint(lambda c1, c2: c1 != c2, (edges[get_edge_name(u,n)], edges[get_edge_name(u,v)]))
@@ -54,23 +75,26 @@ def total_coloring(graph):
             for n in graph.neighbors(v):
                 if n != u:
                     problem.addConstraint(lambda c1, c2: c1 != c2, (edges[get_edge_name(v,n)], edges[get_edge_name(u,v)]))
+        
+      
+        #print(time(), "Colors:", colors, "Solving started")
 
-       
-        solutution = problem.getSolution()
-        if solutution is not None: break
+        solution = problem.getSolution()
+        if solution is not None: break
+        else: colors = colors + 1
     
-    print("Colors:", colors)
-    print("Solution:", solutution)
+    #print("Colors:", colors)
+    #print("Solution:", solution)
     
-    if solutution is not None:
+    if solution is not None:
         # Apply coloring
         for v in graph.nodes():
-            graph.nodes[v]["color"] = solutution[get_vrtx_name(v)]
+            graph.nodes[v]["color"] = solution[get_vrtx_name(v)]
         for u,v in graph.edges():
-            graph.edges[u,v]["color"] = solutution[edges[get_edge_name(u,v)]]
+            graph.edges[u,v]["color"] = solution[edges[get_edge_name(u,v)]]
 
     return colors
 
-   
 def get_vrtx_name(u): return u
 def get_edge_name(u, v): return str(u) + "-" + str(v)
+def time(): return datetime.now().time()

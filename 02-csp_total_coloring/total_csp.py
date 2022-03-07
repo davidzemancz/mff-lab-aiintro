@@ -40,11 +40,11 @@ def total_coloring(graph):
         #print(time(), "Colors:", colors, "Init started")
 
         # Add variables for vertices
-        i = 0
+        first = True
         for v in graph.nodes():
-            if i == 0:
+            if first:
                 problem.addVariable(get_vrtx_name(v), [0])
-                i = 1
+                first = False
             else:
                 problem.addVariable(get_vrtx_name(v), range(0, colors))
 

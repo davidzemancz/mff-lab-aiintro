@@ -35,7 +35,7 @@ def total_coloring(graph):
     solution = None
     colors = max_deg + 1
     while solution is None:
-        problem = constraint.Problem()
+        problem = constraint.Problem()#constraint.MinConflictsSolver())
 
         #print(time(), "Colors:", colors, "Init started")
 
@@ -61,20 +61,21 @@ def total_coloring(graph):
         # Add constrains
         for u,v in graph.edges():
             # Conected vertices
-            problem.addConstraint(lambda c1, c2: c1 != c2, (get_vrtx_name(u), get_vrtx_name(v)))
+            #problem.addConstraint(lambda c1, c2: c1 != c2, (get_vrtx_name(u), get_vrtx_name(v)))
+            problem.addConstraint(constraint.AllDifferentConstraint(), (get_vrtx_name(u), get_vrtx_name(v)))
 
             # Edge its and vertices
-            problem.addConstraint(lambda c1, c2: c1 != c2, (get_vrtx_name(v), edges[get_edge_name(u,v)]))
-            problem.addConstraint(lambda c1, c2: c1 != c2, (get_vrtx_name(u), edges[get_edge_name(u,v)]))
+            problem.addConstraint(constraint.AllDifferentConstraint(), (get_vrtx_name(v), edges[get_edge_name(u,v)]))
+            problem.addConstraint(constraint.AllDifferentConstraint(), (get_vrtx_name(u), edges[get_edge_name(u,v)]))
 
             # Edges sharing common vertex
             for n in graph.neighbors(u):
                 if n != v:
-                    problem.addConstraint(lambda c1, c2: c1 != c2, (edges[get_edge_name(u,n)], edges[get_edge_name(u,v)]))
+                    problem.addConstraint(constraint.AllDifferentConstraint(), (edges[get_edge_name(u,n)], edges[get_edge_name(u,v)]))
             
             for n in graph.neighbors(v):
                 if n != u:
-                    problem.addConstraint(lambda c1, c2: c1 != c2, (edges[get_edge_name(v,n)], edges[get_edge_name(u,v)]))
+                    problem.addConstraint(constraint.AllDifferentConstraint(), (edges[get_edge_name(v,n)], edges[get_edge_name(u,v)]))
         
       
         #print(time(), "Colors:", colors, "Solving started")

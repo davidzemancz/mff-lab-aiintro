@@ -31,8 +31,9 @@ def total_coloring(graph):
     colors = max_deg + 1
     while not solved:
         g = Glucose3()
-        #g.add_clause([-1, 2])
-
+        
+        for u,v in graph.edges():
+            g.add_clause([-1, 2])
 
 
         solved = g.solve()

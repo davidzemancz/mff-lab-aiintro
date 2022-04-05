@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import networkx
 import sys
 from time import time

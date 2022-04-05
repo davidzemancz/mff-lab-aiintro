@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import sys
 from time import time
 from prettytable import PrettyTable
@@ -95,8 +93,8 @@ def main():
             "GridKnight2D": (grid_knight_2D_tests, 3, 7)
     }
 
+    results = PrettyTable(["Test name", "Points", "Reference time [s]", "Your time [s]", "Evaluation"])
     if len(sys.argv) == 1:
-        results = PrettyTable(["Test name", "Points", "Reference time [s]", "Your time [s]", "Evaluation"])
         for name in tests:
             print("Running test", name)
             dataset, points, time_limit = tests[name]
@@ -106,15 +104,19 @@ def main():
             print(msg)
             print()
             results.add_row([name, points, time_limit, running_time, msg])
-        print(results)
     else:
         name = sys.argv[1]
         if name in tests:
             dataset, points, time_limit = tests[name]
+            start_time = time()
             status, msg = informed_search_dataset(dataset)
+            running_time = time() - start_time
             print(msg)
+            print()
+            results.add_row([name, points, time_limit, running_time, msg])
         else:
             print("Unknown test", name)
+    print(results)
 
 """
 To run all tests, run the command

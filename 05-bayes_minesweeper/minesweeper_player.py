@@ -1,5 +1,6 @@
 import numpy
 from minesweeper_common import UNKNOWN, MINE, get_neighbors
+from pysat.solvers import Glucose3
 
 RUN_TESTS = False
 
@@ -131,5 +132,21 @@ class Player:
         # TODO: Finish this calculations
         # Implementing this function is not obligatory but it may help to fulfill the homework.
         # This function is tested by the file probability_test.py.
+
+        game = self.game.copy()
+        game_list = numpy.empty(self.rows*self.columns, dtype=object)
+        x = 0
+        for i in range(self.rows):
+            for j in range(self.columns):
+                game_list[x] = (i, j)
+                game[i,j] = x
+                x += 1
+
+        g = Glucose3()
+        for i in range(self.rows):
+           for j in range(self.columns):
+               if self.game[i, j]:
+                   pass
+        # g.add_clause(range(nodes[node][1], nodes[node][1] + colors))
 
         return probability

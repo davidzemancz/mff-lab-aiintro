@@ -1,4 +1,6 @@
 __pycache__/
 .venv/
-Lib/
-Scripts
+bin/
+lib/
+lib64/
+share/

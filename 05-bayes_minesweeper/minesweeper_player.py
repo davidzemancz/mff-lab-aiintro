@@ -145,8 +145,13 @@ class Player:
         g = Glucose3()
         for i in range(self.rows):
            for j in range(self.columns):
-               if self.game[i, j]:
-                   pass
-        # g.add_clause(range(nodes[node][1], nodes[node][1] + colors))
+               value = self.game[i, j]
+               if value > 0:
+                    # g.add_clause(range(nodes[node][1], nodes[node][1] + colors))
+                    pass
+
+        solved = g.solve()
+        model = g.get_model()
+        
 
         return probability

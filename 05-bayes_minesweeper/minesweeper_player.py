@@ -133,6 +133,13 @@ class Player:
         # Implementing this function is not obligatory but it may help to fulfill the homework.
         # This function is tested by the file probability_test.py.
 
+        # Matrix of all neighbor cells for every cell.
+        # self.neighbors = get_neighbors(rows, columns)
+        # Matrix of numbers of missing mines in the neighborhood of every cell. # -1 if a cell is unexplored.
+        # self.mines = numpy.full(rows*columns, -1).reshape((rows, columns))
+        # Matrix of the numbers of unexplored neighborhood cells, excluding known mines.
+        # self.unknown = numpy.full(rows*columns, 0).reshape((rows, columns))
+
         game = self.game.copy()
         game_list = numpy.empty(self.rows*self.columns, dtype=object)
         x = 0
@@ -143,12 +150,11 @@ class Player:
                 x += 1
 
         g = Glucose3()
+
         for i in range(self.rows):
-           for j in range(self.columns):
-               value = self.game[i, j]
-               if value > 0:
+            for j in range(self.columns):
+                if self.mines[i, j] > 0:
                     # g.add_clause(range(nodes[node][1], nodes[node][1] + colors))
-                    pass
 
         solved = g.solve()
         model = g.get_model()

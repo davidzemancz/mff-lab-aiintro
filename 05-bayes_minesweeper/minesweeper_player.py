@@ -59,7 +59,7 @@ class Player:
                     if prb[i,j] > 0.9999: # Float-point arithmetics may not be exact.
                         self.game[i,j] = MINE
                         self.invalidate_with_neighbors((i,j))
-                    if min_prb > prb[i,j]:
+                    if min_prb >= prb[i,j]:
                         min_prb = prb[i,j]
                         best_position = (i,j)
         return best_position
@@ -139,16 +139,17 @@ class Player:
         for i in range(self.rows):
             for j in range(self.columns):
                 value = self.mines[i,j] 
-                if value >= 0:
+                if value > 0:
                     variables = []
                     for (n_i, n_j) in self.neighbors[i, j]:
                         variable = (n_i, n_j)
-                        if variable in variables_dic: 
-                            variables.append(variable)
-                        elif self.game[n_i, n_j] == UNKNOWN:
-                            problem.addVariable(variable, [0,1])
-                            variables.append(variable)
-                            variables_dic[variable] = 0
+                        if self.game[n_i, n_j] == UNKNOWN:
+                            if variable in variables_dic: 
+                                variables.append(variable)
+                            else:
+                                problem.addVariable(variable, [0,1])
+                                variables.append(variable)
+                                variables_dic[variable] = 0
                     if len(variables) > 0: 
                         problem.addConstraint(constraint.ExactSumConstraint(value), variables)
 

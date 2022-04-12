@@ -1,6 +1,6 @@
 import numpy
 from minesweeper_common import UNKNOWN, MINE, get_neighbors
-from pysat.solvers import Glucose3
+import constraint
 
 RUN_TESTS = False
 
@@ -133,31 +133,31 @@ class Player:
         # Implementing this function is not obligatory but it may help to fulfill the homework.
         # This function is tested by the file probability_test.py.
 
-        # Matrix of all neighbor cells for every cell.
-        # self.neighbors = get_neighbors(rows, columns)
-        # Matrix of numbers of missing mines in the neighborhood of every cell. # -1 if a cell is unexplored.
-        # self.mines = numpy.full(rows*columns, -1).reshape((rows, columns))
-        # Matrix of the numbers of unexplored neighborhood cells, excluding known mines.
-        # self.unknown = numpy.full(rows*columns, 0).reshape((rows, columns))
-
-        game = self.game.copy()
-        game_list = numpy.empty(self.rows*self.columns, dtype=object)
-        x = 0
-        for i in range(self.rows):
-            for j in range(self.columns):
-                game_list[x] = (i, j)
-                game[i,j] = x
-                x += 1
-
-        g = Glucose3()
+        problem = constraint.Problem()
+        variables_dic = {}
 
         for i in range(self.rows):
             for j in range(self.columns):
-                if self.mines[i, j] > 0:
-                    # g.add_clause(range(nodes[node][1], nodes[node][1] + colors))
+                value = self.mines[i,j] 
+                if value >= 0:
+                    variables = []
+                    for (n_i, n_j) in self.neighbors[i, j]:
+                        variable = (n_i, n_j)
+                        if variable in variables_dic: 
+                            variables.append(variable)
+                        elif self.game[n_i, n_j] == UNKNOWN:
+                            problem.addVariable(variable, [0,1])
+                            variables.append(variable)
+                            variables_dic[variable] = 0
+                    if len(variables) > 0: 
+                        problem.addConstraint(constraint.ExactSumConstraint(value), variables)
 
-        solved = g.solve()
-        model = g.get_model()
-        
-
+        solutions = problem.getSolutions()
+        if len(solutions) > 0:
+            for solution in solutions:
+                for variable in solution:
+                    variables_dic[variable] += solution[variable]
+            for (i, j) in variables_dic:
+                probability[i, j] = variables_dic[(i, j)] / len(solutions)
+                
         return probability

@@ -31,7 +31,12 @@ class RobotControl:
 
     # Place all your precomputation here.
     def precompute_probability_policy(self):
-        return self.precompute_probability_policy_trivial()
+        env = self.env
+        print(env)
+        survivability = numpy.zeros((env.rows, env.columns)) # No probability is computed
+        policy = numpy.zeros((env.rows, env.columns), dtype=int)
+
+        return survivability, policy
 
     # Returns a trivial control strategy which just heads directly toward the station ignoring all dangers and movement imperfectness
     def precompute_probability_policy_trivial(self):

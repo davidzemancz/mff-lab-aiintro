@@ -39,7 +39,8 @@ class RobotControl:
         # env.get_safety(position) - Probability of successfully entrance to a given cell.
         # env.get_danger(position) - Probability of lossing the robot when entering a given cell.
 
-        return self.precompute_probability_policy_value_update()
+        return self.precompute_probability_policy_policy_update()
+        #return self.precompute_probability_policy_value_update()
         #return self.precompute_probability_policy_trivial()
 
     # Returns a trivial control strategy which just heads directly toward the station ignoring all dangers and movement imperfectness
@@ -58,6 +59,46 @@ class RobotControl:
                 elif j > env.destination[1]:
                     policy[i,j] = env.WEST
         return survivability, policy
+
+    def precompute_probability_policy_policy_update(self):
+        env = self.env
+
+        # Value-iteration algorithm
+        utility = None
+        #utility_updated = numpy.random.rand(env.rows, env.columns)
+        #utility_updated[0,...], utility_updated[...,0], utility_updated[-1,...], utility_updated[...,-1] = 0, 0, 0, 0
+        #utility_updated = numpy.zeros((env.rows, env.columns))
+        utility_updated = self.env.safety_map.copy()
+        gamma, delta, epsilon = 0.5, 0, 0.001
+        while delta < epsilon * (1 - gamma) / gamma:
+            utility = utility_updated.copy()
+            delta = 0
+            for i in range(1, env.rows - 1):
+                for j in range(1, env.columns - 1):
+                    # Get max utility
+                    action_utility_max = self.get_max_action(utility, i, j)[1]
+                    
+                    # Update
+                    utility_updated[i, j] = self.get_reward((i, j)) + gamma * action_utility_max
+                    if abs(utility_updated[i, j] - utility[i, j]) > delta:
+                        delta = abs(utility_updated[i, j] - utility[i, j])
+        utility = utility_updated
+
+        # Create policy
+        policy = numpy.zeros((env.rows, env.columns), dtype=int)
+        changed = True
+        while changed:
+            changed = False
+            for i in range(1, env.rows - 1):
+                for j in range(1, env.columns - 1):
+                    # Get max utility
+                    action_max = self.get_max_action(utility, i, j)
+                    if action_max[1] > self.get_action_utility(policy[i,j], utility, i, j):
+                        policy[i, j] = action_max[0]
+                        changed = True
+            
+        return utility, policy
+
 
     def precompute_probability_policy_value_update(self):
         env = self.env
@@ -78,7 +119,7 @@ class RobotControl:
         #utility_updated[0,...], utility_updated[...,0], utility_updated[-1,...], utility_updated[...,-1] = 0, 0, 0, 0
         #utility_updated = numpy.zeros((env.rows, env.columns))
         utility_updated = self.env.safety_map.copy()
-        gamma, delta, epsilon = 0.3, 0, 0.0001
+        gamma, delta, epsilon = 0.5, 0, 0.001
         while delta < epsilon * (1 - gamma) / gamma:
             utility = utility_updated.copy()
             delta = 0
@@ -89,8 +130,8 @@ class RobotControl:
                     
                     # Update
                     utility_updated[i, j] = self.get_reward((i, j)) + gamma * action_utility_max
-                    if utility_updated[i, j] - utility[i, j] > delta:
-                        delta = utility_updated[i, j] - utility[i, j]
+                    if abs(utility_updated[i, j] - utility[i, j]) > delta:
+                        delta = abs(utility_updated[i, j] - utility[i, j])
         utility = utility_updated
         
         # Create policy
@@ -108,20 +149,26 @@ class RobotControl:
     # Get best action and its utility
     def get_max_action(self, utility, i, j):
         env = self.env
-        map_size = (1 / ((env.rows - 2) * (env.columns - 2)))
-
+        
         actions_utils = numpy.zeros(4)
-        for action in [env.NORTH, env.EAST, env.SOUTH, env.WEST]:
-            action_util = 0
-            for (n_dir, (n_i, n_j)) in self.get_map_neighbors((i, j)):
-                n_prob = (env.rotation_probability[(n_dir - action) % 4])
-                action_util += n_prob * utility[n_i, n_j]
-            actions_utils[action] = action_util
+        for action in [env.NORTH, env.EAST, env.SOUTH, env.WEST]:            
+            actions_utils[action] = self.get_action_utility(action, utility, i, j)
 
         # Get max utility
         action_utility = numpy.amax(actions_utils)
         action = numpy.argmax(actions_utils)
         return (action, action_utility)
+
+    def get_action_utility(self, action, utility, i, j):
+        env = self.env
+        map_size = (1 / ((env.rows - 2) * (env.columns - 2)))
+        action_util = 0
+
+        for (n_dir, (n_i, n_j)) in self.get_map_neighbors((i, j)):
+            n_prob = (env.rotation_probability[(n_dir - action) % 4] * map_size) / 0.25
+            action_util += n_prob * utility[n_i, n_j]
+
+        return action_util
 
     # Compute reward
     def get_reward(self, position):
@@ -135,8 +182,8 @@ class RobotControl:
         
         safety = self.env.get_safety(position) 
         
-        #return (safety / ((dist + 1))**2)   # 4 body
-        return (safety - (rel_dist_x + rel_dist_y)) # 5 bodu
+        return (safety / ((dist + 1)))
+        #return (safety - (rel_dist_x + rel_dist_y))
         
 
     # Get neighbors

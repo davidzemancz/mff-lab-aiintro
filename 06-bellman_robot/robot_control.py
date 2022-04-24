@@ -74,8 +74,11 @@ class RobotControl:
 
         # Value-iteration algorithm
         utility = None
-        utility_updated = numpy.zeros((env.rows, env.columns))
-        gamma, delta, epsilon = 0.1, 0, 0.001
+        #utility_updated = numpy.random.rand(env.rows, env.columns)
+        #utility_updated[0,...], utility_updated[...,0], utility_updated[-1,...], utility_updated[...,-1] = 0, 0, 0, 0
+        #utility_updated = numpy.zeros((env.rows, env.columns))
+        utility_updated = self.env.safety_map.copy()
+        gamma, delta, epsilon = 0.3, 0, 0.0001
         while delta < epsilon * (1 - gamma) / gamma:
             utility = utility_updated.copy()
             delta = 0
@@ -111,7 +114,7 @@ class RobotControl:
         for action in [env.NORTH, env.EAST, env.SOUTH, env.WEST]:
             action_util = 0
             for (n_dir, (n_i, n_j)) in self.get_map_neighbors((i, j)):
-                n_prob = ((env.rotation_probability[(n_dir - action) % 4] * map_size) / 0.25)
+                n_prob = (env.rotation_probability[(n_dir - action) % 4])
                 action_util += n_prob * utility[n_i, n_j]
             actions_utils[action] = action_util
 
@@ -122,9 +125,19 @@ class RobotControl:
 
     # Compute reward
     def get_reward(self, position):
-        rel_dist_x = abs(position[0] - self.env.destination[0]) / self.env.safety_map.shape[0]
-        rel_dist_y = abs(position[1] - self.env.destination[1]) / self.env.safety_map.shape[1]
-        return 1 * (self.env.get_safety(position) - ((rel_dist_x + rel_dist_y)))
+        dist_x = abs(position[0] - self.env.destination[0])
+        dist_y = abs(position[1] - self.env.destination[1])
+        dist = dist_x + dist_y
+        
+        rel_dist_x = dist_x / self.env.safety_map.shape[0]
+        rel_dist_y = dist_y / self.env.safety_map.shape[1]
+        rel_dist = ((rel_dist_x + rel_dist_y) / 2)
+        
+        safety = self.env.get_safety(position) 
+        
+        #return (safety / ((dist + 1))**2)   # 4 body
+        return (safety - (rel_dist_x + rel_dist_y)) # 5 bodu
+        
 
     # Get neighbors
     def get_map_neighbors(self, position):

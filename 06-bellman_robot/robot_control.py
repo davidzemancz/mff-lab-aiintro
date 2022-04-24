@@ -74,67 +74,66 @@ class RobotControl:
 
         # Value-iteration algorithm
         utility = None
-        #utility_updated = numpy.random.rand(env.rows, env.columns)
-        #utility_updated[0,...], utility_updated[...,0], utility_updated[-1,...], utility_updated[...,-1] = 0, 0, 0, 0
         utility_updated = numpy.zeros((env.rows, env.columns))
-        gamma, delta, epsilon = 0.5, 0, 0.01
-        map_size = (1 / ((env.rows - 2) * (env.columns - 2)))
-        
+        gamma, delta, epsilon = 0.1, 0, 0.001
         while delta < epsilon * (1 - gamma) / gamma:
             utility = utility_updated.copy()
             delta = 0
             for i in range(1, env.rows - 1):
                 for j in range(1, env.columns - 1):
-                    # Get utils of actions
-                    actions_utils = numpy.zeros(4)
-                    for action in [env.FORWARD, env.RIGHT, env.BACKWARD, env.LEFT]:
-                        action_util = 0
-                        for n_i, n_j in self.get_map_neighbors((i, j)):
-                            action_util += (((env.rotation_probability[action]*map_size)/0.25) * utility[n_i, n_j])
-                        actions_utils[action] = action_util
-
                     # Get max utility
-                    actions_utils_max = numpy.amax(actions_utils)
+                    action_utility_max = self.get_max_action(utility, i, j)[1]
                     
                     # Update
-                    utility_updated[i, j] = self.get_reward((i, j)) + gamma * actions_utils_max
+                    utility_updated[i, j] = self.get_reward((i, j)) + gamma * action_utility_max
                     if utility_updated[i, j] - utility[i, j] > delta:
                         delta = utility_updated[i, j] - utility[i, j]
-
-        survivability = utility_updated
+        utility = utility_updated
         
         # Create policy
         policy = numpy.zeros((env.rows, env.columns), dtype=int)
         for i in range(1, env.rows - 1):
             for j in range(1, env.columns - 1):
-                # Get neighbour with max utility
-                n_utils = numpy.zeros(4)
-                for (n, (n_i, n_j)) in enumerate(self.get_map_neighbors((i, j))):
-                    n_utils[n] = survivability[n_i, n_j]
-                n_max = numpy.argmax(n_utils)
+                # Get max action
+                action_max = self.get_max_action(utility, i, j)[0]
 
                 # Set policy
-                if n_max == 0:
-                    policy[i,j] = env.SOUTH
-                elif n_max == 1:
-                    policy[i,j] = env.NORTH
-                elif n_max == 2:
-                    policy[i,j] = env.EAST
-                elif n_max == 3:
-                    policy[i,j] = env.WEST
+                policy[i,j] = action_max
         
-        return survivability, policy
+        return utility, policy
 
+    # Get best action and its utility
+    def get_max_action(self, utility, i, j):
+        env = self.env
+        map_size = (1 / ((env.rows - 2) * (env.columns - 2)))
+
+        actions_utils = numpy.zeros(4)
+        for action in [env.NORTH, env.EAST, env.SOUTH, env.WEST]:
+            action_util = 0
+            for (n_dir, (n_i, n_j)) in self.get_map_neighbors((i, j)):
+                n_prob = ((env.rotation_probability[(n_dir - action) % 4] * map_size) / 0.25)
+                action_util += n_prob * utility[n_i, n_j]
+            actions_utils[action] = action_util
+
+        # Get max utility
+        action_utility = numpy.amax(actions_utils)
+        action = numpy.argmax(actions_utils)
+        return (action, action_utility)
+
+    # Compute reward
     def get_reward(self, position):
         rel_dist_x = abs(position[0] - self.env.destination[0]) / self.env.safety_map.shape[0]
         rel_dist_y = abs(position[1] - self.env.destination[1]) / self.env.safety_map.shape[1]
         return 1 * (self.env.get_safety(position) - ((rel_dist_x + rel_dist_y)))
 
+    # Get neighbors
     def get_map_neighbors(self, position):
+        env = self.env
+
         neighbors = []
-        if position[0] + 1 < self.env.rows: neighbors.append((position[0] + 1, position[1])) # SOUTH
-        if position[0] - 1 >= 0: neighbors.append((position[0] - 1, position[1])) # NORTH
-        if position[1] + 1 < self.env.columns: neighbors.append((position[0], position[1] + 1)) # EAST
-        if position[1] - 1 >= 0: neighbors.append((position[0], position[1] - 1)) # WEST
-        return numpy.array(neighbors)
+        if position[0] - 1 >= 0: neighbors.append((env.NORTH, (position[0] - 1, position[1]))) # NORTH
+        if position[1] + 1 < env.columns: neighbors.append((env.EAST, (position[0], position[1] + 1))) # EAST
+        if position[0] + 1 < env.rows: neighbors.append((env.SOUTH, (position[0] + 1, position[1]))) # SOUTH
+        if position[1] - 1 >= 0: neighbors.append((env.WEST, (position[0], position[1] - 1))) # WEST
+        return numpy.array(neighbors, dtype=object)
         

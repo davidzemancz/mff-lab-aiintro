@@ -62,16 +62,19 @@ class RobotControl:
     def precompute_probability_policy_value_update(self):
         env = self.env
                 
-        # Value iteration algorithm
+        # Init
         policy = numpy.zeros((env.rows, env.columns), dtype=int)
         utility = numpy.zeros((env.rows, env.columns))
         utility[tuple(env.destination)] = 1.0
-        diff_max, err_max, iter_max, iter = 1, 0.05, 200, 0
-        changed = True
-        while diff_max > err_max and iter <= iter_max and changed:
-            diff_max = 0 # Maximum differance between old and new utility
+
+        # Params
+        utility_diff_max, utility_err_max, iter_max, iter, any_policy_changed = 1, 0.05, 200, 0, True
+
+        # Value iteration algorithm
+        while utility_diff_max > utility_err_max and iter <= iter_max and any_policy_changed:
+            utility_diff_max = 0 # Maximum differance between old and new utility
             iter += 1 # Number of iterations
-            changed = False # Does any policy changed
+            any_policy_changed = False # Does any policy changed
             
             # For all cells except borders
             for i in range(1, env.rows - 1):
@@ -92,14 +95,14 @@ class RobotControl:
                     best_action_util = actions_utils[best_action] # Best actions utility
                     
                     # Compute utility difference
-                    diff = abs(best_action_util - utility[i, j])
-                    if diff > diff_max: diff_max = diff
+                    utility_diff = abs(best_action_util - utility[i, j])
+                    if utility_diff > utility_diff_max: utility_diff_max = utility_diff
 
                     # Update utility
                     utility[i, j] = best_action_util
 
                     # Does policy changed
-                    changed = changed or policy[i, j] != best_action
+                    any_policy_changed = any_policy_changed or policy[i, j] != best_action
 
                     # Update policy
                     policy[i, j] = best_action

@@ -64,32 +64,28 @@ class RobotControl:
                 
         # Value iteration algorithm
         policy = numpy.zeros((env.rows, env.columns), dtype=int)
-        utility_updated = numpy.zeros((env.rows, env.columns))
-        #utility_updated = numpy.random.rand(env.rows, env.columns)
+        utility = numpy.zeros((env.rows, env.columns))
+        utility[tuple(env.destination)] = 1.0
         diff_max, err_max, iter_max, iter = 1, 0.05, 200, 0
         while diff_max > err_max and iter <= iter_max:
             diff_max = 0
             iter += 1
-            utility_updated[tuple(env.destination)] = 1.0
-            utility = utility_updated.copy()
+            
             for i in range(1, env.rows - 1):
                 for j in range(1, env.columns - 1):
                     # Ignore destination
-                    #if i == env.destination[0] and j == env.destination[1]: continue
+                    if i == env.destination[0] and j == env.destination[1]: continue
                     
                     # Get best action
                     (best_action, best_action_util) = self.get_best_action((i, j), utility)
                     
-                    # Update utility and policy
-                    utility_updated[i, j] = best_action_util
-                    policy[i, j] = best_action
-
                     # Compute difference
-                    diff = abs(utility[i, j] - utility_updated[i, j])
-                    if diff > diff_max:
-                        diff_max = diff
-        
-        utility = utility_updated
+                    diff = abs(best_action_util - utility[i, j])
+                    if diff > diff_max: diff_max = diff
+
+                    # Update utility and policy
+                    utility[i, j] = best_action_util
+                    policy[i, j] = best_action
         
         return utility, policy
 

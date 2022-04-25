@@ -67,14 +67,12 @@ class RobotControl:
         utility = numpy.zeros((env.rows, env.columns))
         utility[tuple(env.destination)] = 1.0
 
-        # Params
-        utility_diff_max, utility_err_max, iter_max, iter, any_policy_changed = 1, 0.05, 200, 0, True
+        # Does any policy changed
+        any_policy_changed = True 
 
-        # Value iteration algorithm
-        while utility_diff_max > utility_err_max and iter <= iter_max and any_policy_changed:
-            utility_diff_max = 0 # Maximum differance between old and new utility
-            iter += 1 # Number of iterations
-            any_policy_changed = False # Does any policy changed
+        # Policy iteration algorithm
+        while any_policy_changed:
+            any_policy_changed = False 
             
             # For all cells except borders
             for i in range(1, env.rows - 1):
@@ -94,10 +92,6 @@ class RobotControl:
                     best_action = numpy.argmax(actions_utils) # Best action
                     best_action_util = actions_utils[best_action] # Best actions utility
                     
-                    # Compute utility difference
-                    utility_diff = abs(best_action_util - utility[i, j])
-                    if utility_diff > utility_diff_max: utility_diff_max = utility_diff
-
                     # Update utility
                     utility[i, j] = best_action_util
 
@@ -106,5 +100,5 @@ class RobotControl:
 
                     # Update policy
                     policy[i, j] = best_action
-        
+
         return utility, policy

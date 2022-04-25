@@ -31,7 +31,17 @@ class RobotControl:
 
     # Place all your precomputation here.
     def precompute_probability_policy(self):
-        return self.precompute_probability_policy_trivial()
+        # ----- attrs -----
+        # env.destination - Position of the station
+        # env.safety_map - The matrix of probalities that our robot successfully enter each cell
+        # env.rotation_probability - Distribution of actual movement relative to the given command.
+        # ----- methods -----
+        # env.get_safety(position) - Probability of successfully entrance to a given cell.
+        # env.get_danger(position) - Probability of lossing the robot when entering a given cell.
+
+        return self.precompute_probability_policy_policy_update()
+        #return self.precompute_probability_policy_value_update()
+        #return self.precompute_probability_policy_trivial()
 
     # Returns a trivial control strategy which just heads directly toward the station ignoring all dangers and movement imperfectness
     def precompute_probability_policy_trivial(self):
@@ -50,3 +60,140 @@ class RobotControl:
                     policy[i,j] = env.WEST
         return survivability, policy
 
+    def precompute_probability_policy_policy_update(self):
+        env = self.env
+
+        # Value-iteration algorithm
+        utility = None
+        #utility_updated = numpy.random.rand(env.rows, env.columns)
+        #utility_updated[0,...], utility_updated[...,0], utility_updated[-1,...], utility_updated[...,-1] = 0, 0, 0, 0
+        #utility_updated = numpy.zeros((env.rows, env.columns))
+        utility_updated = self.env.safety_map.copy()
+        gamma, delta, epsilon = 0.5, 0, 0.001
+        while delta < epsilon * (1 - gamma) / gamma:
+            utility = utility_updated.copy()
+            delta = 0
+            for i in range(1, env.rows - 1):
+                for j in range(1, env.columns - 1):
+                    # Get max utility
+                    action_utility_max = self.get_max_action(utility, i, j)[1]
+                    
+                    # Update
+                    utility_updated[i, j] = self.get_reward((i, j)) + gamma * action_utility_max
+                    if abs(utility_updated[i, j] - utility[i, j]) > delta:
+                        delta = abs(utility_updated[i, j] - utility[i, j])
+        utility = utility_updated
+
+        # Create policy
+        policy = numpy.zeros((env.rows, env.columns), dtype=int)
+        changed = True
+        while changed:
+            changed = False
+            for i in range(1, env.rows - 1):
+                for j in range(1, env.columns - 1):
+                    # Get max utility
+                    action_max = self.get_max_action(utility, i, j)
+                    if action_max[1] > self.get_action_utility(policy[i,j], utility, i, j):
+                        policy[i, j] = action_max[0]
+                        changed = True
+            
+        return utility, policy
+
+
+    def precompute_probability_policy_value_update(self):
+        env = self.env
+                
+        # Implementation using value update
+        # Bellman's equation U(s) = R(s) + \gamma * max_a \sum_r P(r|s,a) U(r)
+        # Where     
+        #   R(s) = env.safety_map[s]
+        #   P(r|s,a) = P(r|a) = P(a|r)P(r)/P(a)
+        #   Where
+        #       P(r) = 1/|states|
+        #       P(a) = 1/4
+        #       P(a|r) = env.rotation_probability[direction]
+
+        # Value-iteration algorithm
+        utility = None
+        #utility_updated = numpy.random.rand(env.rows, env.columns)
+        #utility_updated[0,...], utility_updated[...,0], utility_updated[-1,...], utility_updated[...,-1] = 0, 0, 0, 0
+        #utility_updated = numpy.zeros((env.rows, env.columns))
+        utility_updated = self.env.safety_map.copy()
+        gamma, delta, epsilon = 0.5, 0, 0.001
+        while delta < epsilon * (1 - gamma) / gamma:
+            utility = utility_updated.copy()
+            delta = 0
+            for i in range(1, env.rows - 1):
+                for j in range(1, env.columns - 1):
+                    # Get max utility
+                    action_utility_max = self.get_max_action(utility, i, j)[1]
+                    
+                    # Update
+                    utility_updated[i, j] = self.get_reward((i, j)) + gamma * action_utility_max
+                    if abs(utility_updated[i, j] - utility[i, j]) > delta:
+                        delta = abs(utility_updated[i, j] - utility[i, j])
+        utility = utility_updated
+        
+        # Create policy
+        policy = numpy.zeros((env.rows, env.columns), dtype=int)
+        for i in range(1, env.rows - 1):
+            for j in range(1, env.columns - 1):
+                # Get max action
+                action_max = self.get_max_action(utility, i, j)[0]
+
+                # Set policy
+                policy[i,j] = action_max
+        
+        return utility, policy
+
+    # Get best action and its utility
+    def get_max_action(self, utility, i, j):
+        env = self.env
+        
+        actions_utils = numpy.zeros(4)
+        for action in [env.NORTH, env.EAST, env.SOUTH, env.WEST]:            
+            actions_utils[action] = self.get_action_utility(action, utility, i, j)
+
+        # Get max utility
+        action_utility = numpy.amax(actions_utils)
+        action = numpy.argmax(actions_utils)
+        return (action, action_utility)
+
+    def get_action_utility(self, action, utility, i, j):
+        env = self.env
+        map_size = (1 / ((env.rows - 2) * (env.columns - 2)))
+        action_util = 0
+
+        for (n_dir, (n_i, n_j)) in self.get_map_neighbors((i, j)):
+            n_prob = (env.rotation_probability[(n_dir - action) % 4] * map_size) / 0.25
+            action_util += n_prob * utility[n_i, n_j]
+
+        return action_util
+
+    # Compute reward
+    def get_reward(self, position):
+        dist_x = abs(position[0] - self.env.destination[0])
+        dist_y = abs(position[1] - self.env.destination[1])
+        dist = dist_x + dist_y
+        
+        rel_dist_x = dist_x / self.env.safety_map.shape[0]
+        rel_dist_y = dist_y / self.env.safety_map.shape[1]
+        rel_dist = ((rel_dist_x + rel_dist_y) / 2)
+        
+        safety = self.env.get_safety(position) 
+        
+        return (safety / ((dist + 1)))
+        #return (safety - (rel_dist_x + rel_dist_y))
+        
+
+    # Get neighbors
+    def get_map_neighbors(self, position):
+        env = self.env
+
+        neighbors = []
+        if position[0] - 1 >= 0: neighbors.append((env.NORTH, (position[0] - 1, position[1]))) # NORTH
+        if position[1] + 1 < env.columns: neighbors.append((env.EAST, (position[0], position[1] + 1))) # EAST
+        if position[0] + 1 < env.rows: neighbors.append((env.SOUTH, (position[0] + 1, position[1]))) # SOUTH
+        if position[1] - 1 >= 0: neighbors.append((env.WEST, (position[0], position[1] - 1))) # WEST
+        return numpy.array(neighbors, dtype=object)
+        

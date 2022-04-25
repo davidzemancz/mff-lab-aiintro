@@ -67,55 +67,41 @@ class RobotControl:
         utility = numpy.zeros((env.rows, env.columns))
         utility[tuple(env.destination)] = 1.0
         diff_max, err_max, iter_max, iter = 1, 0.05, 200, 0
-        while diff_max > err_max and iter <= iter_max:
-            diff_max = 0
-            iter += 1
+        changed = True
+        while diff_max > err_max and iter <= iter_max and changed:
+            diff_max = 0 # Maximum differance between old and new utility
+            iter += 1 # Number of iterations
+            changed = False # Does any policy changed
             
+            # For all cells except borders
             for i in range(1, env.rows - 1):
                 for j in range(1, env.columns - 1):
                     # Ignore destination
                     if i == env.destination[0] and j == env.destination[1]: continue
                     
-                    # Get best action
-                    (best_action, best_action_util) = self.get_best_action((i, j), utility)
+                    # Get best action - compute utility for all actions and neighbors
+                    actions_utils = numpy.zeros(4)
+                    for action in [env.NORTH, env.EAST, env.SOUTH, env.WEST]:  # for actions
+                        action_util = 0
+                        for (n_dir, (n_i, n_j)) in [(env.NORTH, (i - 1, j)), (env.EAST, (i, j + 1)), (env.SOUTH, (i + 1, j)), (env.WEST, (i, j - 1))]:  # for neighbors
+                            n_prob = env.rotation_probability[(n_dir - action) % 4]
+                            action_util += n_prob * utility[n_i, n_j] * env.safety_map[n_i, n_j]
+                        actions_utils[action] = action_util
+
+                    best_action = numpy.argmax(actions_utils) # Best action
+                    best_action_util = actions_utils[best_action] # Best actions utility
                     
-                    # Compute difference
+                    # Compute utility difference
                     diff = abs(best_action_util - utility[i, j])
                     if diff > diff_max: diff_max = diff
 
-                    # Update utility and policy
+                    # Update utility
                     utility[i, j] = best_action_util
+
+                    # Does policy changed
+                    changed = changed or policy[i, j] != best_action
+
+                    # Update policy
                     policy[i, j] = best_action
         
         return utility, policy
-
-    # Get best action for given position
-    def get_best_action(self, position, utility):
-        env = self.env
-        (i, j) = position
-
-        # Compute utility for all actions and neighbors
-        actions_utils = numpy.zeros(4)
-        for action in [env.NORTH, env.EAST, env.SOUTH, env.WEST]:   
-            action_util = 0
-            for (n_dir, (n_i, n_j)) in self.get_map_neighbors((i, j)):
-                n_prob = env.rotation_probability[(n_dir - action) % 4]
-                action_util += n_prob * utility[n_i, n_j] * self.env.get_safety((n_i, n_j))
-            actions_utils[action] = action_util
-
-        best_action = numpy.argmax(actions_utils) # Best action
-        best_action_util = actions_utils[best_action] # Best actions utility
-
-        return (best_action, best_action_util)
-
-    # Get neighbors
-    def get_map_neighbors(self, position):
-        env = self.env
-
-        neighbors = []
-        if position[0] - 1 >= 0: neighbors.append((env.NORTH, (position[0] - 1, position[1]))) # NORTH
-        if position[1] + 1 < env.columns: neighbors.append((env.EAST, (position[0], position[1] + 1))) # EAST
-        if position[0] + 1 < env.rows: neighbors.append((env.SOUTH, (position[0] + 1, position[1]))) # SOUTH
-        if position[1] - 1 >= 0: neighbors.append((env.WEST, (position[0], position[1] - 1))) # WEST
-        return numpy.array(neighbors, dtype=object)
-        

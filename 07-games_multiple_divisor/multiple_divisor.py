@@ -17,37 +17,21 @@ def player(stones, last):
 
         TODO: Implement this function.
     """
-    global stones_length, cache
-
-    if len(stones) >= stones_length:
-        stones_length = len(stones)
-        cache = {}
-    
-    #if len(cache) % 10000 == 0:
-    #    print(len(cache))
-
-    params_hash = hash(tuple(stones)) + (hash(last) * 100)
-
-    c = cache.get(params_hash)
-    if c is not None:
-        return c
-
     ret = False
 
-    if len(stones) > 0:
-        possible_stones = [s for s in stones if can_take(s, last)]
-        winning = []
-        for stone in possible_stones:
-            
-            player2Winning = None
 
-            new_stones = stones.copy()
-            new_stones.remove(stone)
-            player2Winning = player(new_stones, stone) 
-            
-            if not player2Winning:
-                ret = stone
-                break
+    stones_length = len(stones)
+    for i in range(stones_length - 1, -1, -1):
+    #for i in range(stones_length): ... z nejakeho duvodu je to naopak rychlejsi
+        stone = stones[i]
+        if not can_take(stone, last): continue
+        
+        stones.remove(stone)
+        player2Winning = player(stones, stone) 
+        stones.insert(i, stone)
 
-    cache[params_hash] = ret
+        if not player2Winning:
+            ret = stone
+            break
+
     return ret

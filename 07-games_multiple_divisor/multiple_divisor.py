@@ -14,13 +14,14 @@ def player(stones, last):
 
         TODO: Implement this function.
     """
-    if stones is None or len(stones) == 0: return False
+    if len(stones) == 0: return False
 
     possible_stones = [s for s in stones if can_take(s, last)]
+    winning = []
     for stone in possible_stones:
-        new_stones = stones.copy().remove(stone)
+        new_stones = stones.copy()
+        new_stones.remove(stone)
         player2Winning = player(new_stones, stone)
         if not player2Winning:
             return stone
-
     return False

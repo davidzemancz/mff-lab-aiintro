@@ -6,6 +6,7 @@ def can_take(a, b):
     return a % b == 0 if a >= b else b % a == 0
 
 cache = {}
+stones_length = 0
 
 def player(stones, last):
     """
@@ -16,7 +17,16 @@ def player(stones, last):
 
         TODO: Implement this function.
     """
-    params_hash = hash(tuple(stones)) + hash(last)
+    global stones_length, cache
+
+    if len(stones) >= stones_length:
+        stones_length = len(stones)
+        cache = {}
+    
+    #if len(cache) % 10000 == 0:
+    #    print(len(cache))
+
+    params_hash = hash(tuple(stones)) + (hash(last) * 100)
 
     c = cache.get(params_hash)
     if c is not None:
@@ -37,6 +47,7 @@ def player(stones, last):
             
             if not player2Winning:
                 ret = stone
+                break
 
     cache[params_hash] = ret
     return ret

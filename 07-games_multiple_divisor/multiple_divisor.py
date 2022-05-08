@@ -5,6 +5,8 @@ def can_take(a, b):
     """
     return a % b == 0 if a >= b else b % a == 0
 
+cache = {}
+
 def player(stones, last):
     """
         Return one move of the current player
@@ -14,14 +16,27 @@ def player(stones, last):
 
         TODO: Implement this function.
     """
-    if len(stones) == 0: return False
+    params_hash = hash(tuple(stones)) + hash(last)
 
-    possible_stones = [s for s in stones if can_take(s, last)]
-    winning = []
-    for stone in possible_stones:
-        new_stones = stones.copy()
-        new_stones.remove(stone)
-        player2Winning = player(new_stones, stone)
-        if not player2Winning:
-            return stone
-    return False
+    c = cache.get(params_hash)
+    if c is not None:
+        return c
+
+    ret = False
+
+    if len(stones) > 0:
+        possible_stones = [s for s in stones if can_take(s, last)]
+        winning = []
+        for stone in possible_stones:
+            
+            player2Winning = None
+
+            new_stones = stones.copy()
+            new_stones.remove(stone)
+            player2Winning = player(new_stones, stone) 
+            
+            if not player2Winning:
+                ret = stone
+
+    cache[params_hash] = ret
+    return ret

@@ -17,11 +17,20 @@ def player(stones, last):
 
         TODO: Implement this function.
     """
+    global stones_length, cache
+
+    if len(stones) >= stones_length:
+        stones_length = len(stones)
+        cache = {}
+    
+    params_hash = (hash(tuple(stones))*100) + (hash(last))
+    ret = cache.get(params_hash)
+    if ret is not None:
+        return ret
+
     ret = False
 
-
-    stones_length = len(stones)
-    for i in range(stones_length - 1, -1, -1):
+    for i in range(len(stones) - 1, -1, -1):
     #for i in range(stones_length): ... z nejakeho duvodu je to naopak rychlejsi
         stone = stones[i]
         if not can_take(stone, last): continue
@@ -34,4 +43,5 @@ def player(stones, last):
             ret = stone
             break
 
+    cache[params_hash] = ret
     return ret

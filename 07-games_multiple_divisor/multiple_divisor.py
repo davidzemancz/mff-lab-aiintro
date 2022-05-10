@@ -9,6 +9,7 @@ def can_take(a, b):
 use_cache = True
 cache = {}
 stones_length = 0
+primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97]
 
 def player(stones, last):
     """
@@ -20,14 +21,14 @@ def player(stones, last):
 
         TODO: Implement this function.
     """
-    global stones_length, cache, use_cache
+    global stones_length, cache, use_cache, primes
 
     if use_cache:
         if len(stones) > stones_length:
             stones_length = len(stones)
             cache = {}
         
-        params_hash = (hash(tuple(stones))*100) + (hash(last))
+        params_hash = (hash(str(stones))*100) + (hash(last))
         ret = cache.get(params_hash)
         if ret is not None:
             return ret
@@ -45,8 +46,12 @@ def player(stones, last):
 
         if not player2Winning:
             ret = stone
+            #stones[i] = stone
             break
 
     if use_cache:
         cache[params_hash] = ret
+
+    #print(stones, last, ret)
+
     return ret

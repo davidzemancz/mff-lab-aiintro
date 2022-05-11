@@ -1,3 +1,5 @@
+import heuristika from heuristika
+
 def can_take(a, b):
     """
         Return True if a player can take a when b was played before
@@ -36,7 +38,8 @@ def player(stones, last):
     ret = False
 
     #for i in range(len(stones)): # ... z nejakeho duvodu je to naopak rychlejsi
-    for i in range(len(stones) - 1, -1, -1): 
+    #for i in range(len(stones) - 1, -1, -1): 
+    for i in heuristika(stones): 
         stone = stones[i]
         if not can_take(stone, last): continue
         
